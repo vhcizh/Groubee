@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+ <!-- namespace="패키지명.인터페이스" -->
+ <mapper namespace="com.spring.tutorial.dao.AttendanceDAO"> 
+         
+    <!-- 회사 정보 확인 -->
+      <select id="companyInfo" parameterType="int" resultType="com.spring.tutorial.dto.CompanyDTO">
+         SELECT * FROM c_attendance c
+      JOIN GRB_COMPANY g ON g.company_id = c.company_id   
+      where c.company_id = #{c.company_id}
+   </select> 
+      
+      <!-- 사원 재직자 수  -->
+      <select id="memberCnt" resultType="int">
+         SELECT count(*) FROM GRB_MEMBER
+      WHERE state = '재직'
+   </select>
+   
+   <!-- 통합문서함 cnt -->
+      <select id="approvalCnt" resultType="int">
+         SELECT count(*) FROM GRB_APPROVALINFO
+   </select>
+   
+   <!-- 회사 근태 내규 설정 -->
+   <update id="c_attendance" parameterType="java.util.Map">
+      update c_attendance
+      set attendin=#{attendin}, attendout=#{attendout}, rest_in=#{rest_in}, rest_out=#{rest_out},
+         over_in=#{over_in}, over_out=#{over_out}   
+      where company_id=#{company_id}
+   </update>
+         
+ </mapper>

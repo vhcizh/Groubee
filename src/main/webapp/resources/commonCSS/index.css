@@ -1,0 +1,22 @@
+@charset "UTF-8";
+
+.card-body .dropdown-item{width:215px;}
+.row .index_box{width:3vw;}
+.col-lg-3 .font-weight-medium{font-size:23px; margin-top:10px; padding-bottom:5px;}
+.border-0 .last-collum{text-align:center;}
+
+/* 근태관리 버튼 */
+.btn_wrap{width:265.5px; height:auto; margin-bottom:-25px; padding:0 17.5px; margin:0 auto; /* margin-left:18px;*/}
+.btnAttendence{width:110px;}
+.btnAttendence:first-child{margin-right:5px;}
+.btn{border-radius:4px;} /* border-radius 적용안됨 */
+.attendenceTime{margin-top:5px; margin-bottom:40px;}
+.attendenceChk{float:right;}
+.attendenceHr{margin:35px 0;}
+#btnGroupVerticalDrop1{width:230px; height:40px; margin-top:-20px; margin-left:-35px; margin-bottom:-30px; /* border-radius:4px; */}
+#btnGroupVerticalDrop1 .fa-angle-down{padding-left:7%;}
+.card-body .dropdown-item{width:230px;}
+
+
+
+

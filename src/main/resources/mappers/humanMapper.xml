@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+ <!-- namespace="패키지명.인터페이스" -->
+ <mapper namespace="com.spring.tutorial.dao.HumanDAO"> 
+   		
+    <!-- 기본정보  -->
+    <select id="selecthuman" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+		select *
+		    from grb_member
+		where id = #{id}
+   	</select>
+   	
+   	<!-- 인사평가 -->
+   	<select id="assessment" parameterType="String" resultType="com.spring.tutorial.dto.PersonnelDTO">
+   		select * from grb_personnel p
+   		join grb_member m on m.id = p.p_id
+		where p.id= #{id}
+   	</select>
+   	
+   	<!-- 직무&담당 -->
+   	<select id="jobsfao" parameterType="String" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.rank ,t.*
+		  from grb_member m join grb_team t
+		  on m.id = t.id 
+		where m.id = #{id}
+   	</select>
+   		
+   
+   <!-- 개인프로필  -->
+   <select id="myHuman" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+   		select *
+		    from  grb_member 
+		where id = #{id}
+   </select>
+   
+   
+   <!-- 조직도 부서-->
+  <!--  <select id="groubdepart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  select depart_name from grb_depart
+   </select>
+   
+   
+    조직도 팀
+   <select id="groubTeamInfo"  resultType="com.spring.tutorial.dto.TeamDTO">
+		select 
+		distinct team_name from grb_team
+		order by team_name
+   </select>
+   
+   조직도 유저 
+   <select id="groubUser" resultType="com.spring.tutorial.dto.CommonDTO">
+	   	select t.team_name 
+		      ,m.name
+		    from grb_member m join grb_team t 
+		    on m.id = t.id 
+		where t.team_name='개발1팀'
+		order by t.team_name
+   </select> -->
+   
+   
+   <!-- 사업부 -->
+   <select id="b_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '사업부' 
+	  ORDER BY team_name
+   </select>
+   
+	   <!-- 사업1팀 -->
+	 <select id="b_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+	   		select m.name , m.id
+			    from grb_team t join grb_member  m on m.id = t.id
+			where team_name = '사업1팀'
+	   </select>
+	   
+	 	<!--   사업2팀 -->
+	   <select id="b_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+	   		select m.name , m.id
+			    from grb_team t join grb_member  m on m.id = t.id
+			where team_name = '사업2팀'
+	   </select> 
+	   
+	   <!-- 경영지원부 -->
+   <select id="j_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '경영지원부' 
+	  ORDER BY team_name
+   </select>
+   
+     <!-- 경영1팀 -->
+	 <select id="j_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '경영지원1팀'
+   </select>
+   
+ 	<!--   경영2팀 -->
+   <select id="j_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '경영지원2팀'
+   </select> 
+   
+      <!-- 개발부 -->
+   <select id="i_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '개발부' 
+	  ORDER BY team_name
+   </select>
+   
+     <!-- 개발1팀 -->
+	 <select id="i_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '개발1팀'
+   </select>
+   
+ 	<!--   개발2팀 -->
+   <select id="i_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '개발2팀'
+   </select> 
+   
+   <!--   개발3팀-->
+   <select id="i_threeteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '개발3팀'
+   </select> 
+ 
+ 
+    <!-- 영업부 -->
+   <select id="o_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '영업부' 
+	  ORDER BY team_name
+   </select>
+   
+     <!-- 영업1팀 -->
+	 <select id="o_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '영업1팀'
+   </select>
+   
+ 	<!--   영업2팀 -->
+   <select id="o_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '영업2팀'
+   </select>  
+   
+    <!-- 인사부 -->
+   <select id="p_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '인사부' 
+	  ORDER BY team_name
+   </select>
+   
+     <!-- 인사1팀-->
+	 <select id="p_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '인사1팀'
+   </select>
+   
+ 	<!--   인사2팀 -->
+   <select id="p_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '인사2팀'
+   </select> 
+   
+   <!--  인사3팀-->
+   <select id="p_threeteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '인사3팀'
+   </select>  
+   
+    <!-- 총무부 -->
+   <select id="c_depart" resultType="com.spring.tutorial.dto.DepartDTO">
+	  SELECT DISTINCT TEAM_NAME , depart_name FROM grb_team 
+		WHERE DEPART_NAME = '총무부' 
+	  ORDER BY team_name
+   </select>
+   
+     <!-- 총무1팀 -->
+	 <select id="c_oneteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '총무1팀'
+   </select>
+   
+ 	<!--   총무2팀 -->
+   <select id="c_twoteam" resultType="com.spring.tutorial.dto.TeamDTO">
+   		select m.name , m.id
+		    from grb_team t join grb_member  m on m.id = t.id
+		where team_name = '총무2팀'
+   </select>  
+   
+   <!-- 개인정보 수정  -->
+    <update id="memberUpdate" parameterType="com.spring.tutorial.dto.CommonDTO">
+   		update grb_member 
+		set  email_in=#{email_in}, address=#{address}, gender= #{gender}, marry=#{marry},
+		tel=#{tel} where id = #{id}
+   </update> 
+   
+   <!-- 전체인사정보  -->
+   <select id="usersInfo" resultType="com.spring.tutorial.dto.CommonDTO">
+   		select * from grb_member
+   </select>
+    
+   		
+ </mapper>

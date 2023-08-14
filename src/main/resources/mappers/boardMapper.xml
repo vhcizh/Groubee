@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+<!-- namespace="패키지명.인터페이스" -->
+<mapper namespace="com.spring.tutorial.dao.BoardDAO"> 
+   	
+	<!-- 게시물 목록 -->
+	<select id="boardList" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.BoardDTO">
+		<![CDATA[
+		SELECT *
+		 FROM (SELECT A.*, rownum as rn
+		            FROM (SELECT num, category, id, title, content, read_cnt,
+		            			 (SELECT COUNT(*) FROM grb_comment WHERE board_num = b.num) comment_cnt, reg_date, board_file, show
+                    		FROM grb_board b
+		                    WHERE show = #{show}
+		                      AND category IN (#{category},2)
+		                    ORDER BY category DESC, num DESC
+		                ) A
+		       )
+        WHERE rn >= #{start} AND rn <= #{end}
+		 ]]>
+	</select>
+	
+	<!-- 게시글 갯수 구하기 -->
+	<select id="boardCnt" parameterType="java.util.Map" resultType="int">
+		SELECT count(*) as cnt FROM grb_board WHERE category IN (#{category},2) AND show = #{show}
+	</select>
+   	
+   	<!-- 게시글 상세페이지 -->
+	<select id="boardDetail" parameterType="int" resultType="com.spring.tutorial.dto.BoardDTO">
+		SELECT m.id, m.name, b.num, b.category, b.title, b.content, b.read_cnt, b.comment_cnt, b.reg_date, b.board_file
+		FROM grb_board b
+		JOIN grb_member m
+		ON b.id = m.id
+		WHERE num=#{num}
+	</select>
+	
+	<!-- 조회수 증가 -->
+	<update id="plusReadCnt" parameterType="int">
+		UPDATE grb_board
+		   SET read_cnt = read_cnt+1
+		 WHERE num = #{num}
+	</update>
+	
+	<!-- 게시글 작성 처리 -->
+	<insert id="boardInsert" parameterType="com.spring.tutorial.dto.BoardDTO">
+		INSERT INTO grb_board(num, category, id, title, content, read_cnt, comment_cnt, reg_date, show)
+			VALUES(grb_board_seq.nextval ,#{category}, #{id}, #{title}, #{content}, 0, 0, sysdate, 1)
+	</insert>
+	
+	<!-- 게시글 삭제처리 -->
+	<update id="boardDelete" parameterType="String">
+		UPDATE grb_board 
+		   SET show = 0
+		 WHERE num = #{num}
+	</update>
+	
+	<!-- 게시글 영구삭제 -->
+	<delete id="boardDelete2" parameterType="String">
+		DELETE FROM grb_board 
+		 WHERE num = #{num}
+	</delete>
+	
+	<!-- 게시글 수정처리 -->
+	<update id="updateBoard" parameterType="com.spring.tutorial.dto.BoardDTO">
+		UPDATE grb_board 
+		   SET category = #{category}, title = #{title}, content = #{content}
+		 WHERE num = #{num}
+	</update>
+	
+	<!-- 댓글목록 처리 -->
+	<select id="comment" parameterType="int" resultType="com.spring.tutorial.dto.BoardCommentDTO">
+		 SELECT m.name, c.writer, c.content, c.reg_date, c.comment_num
+		  FROM grb_comment c
+		  JOIN grb_member m
+		    ON c.writer = m.id
+		 WHERE c.board_num=#{board_num}
+		 ORDER BY c.comment_num
+	</select>
+	
+	<!-- 댓글 추가 처리 -->
+	<insert id="commentAdd" parameterType="com.spring.tutorial.dto.BoardCommentDTO">
+		INSERT INTO grb_comment(comment_num, board_num, writer, content, reg_date)
+			VALUES(grb_comment_seq.nextval, #{board_num}, #{writer}, #{content}, sysdate)
+	</insert>
+	
+	<!-- 댓글 삭제 -->
+	<delete id="commentDelete" parameterType="int">
+	DELETE FROM grb_comment WHERE comment_num = #{comment_num}
+	</delete>
+     
+</mapper>	

@@ -1,0 +1,28 @@
+@charset "UTF-8";
+
+.left-sidebar{padding-top:0; height:100%;}
+.left-sidebar .scroll-sidebar{height:100%; background:#f2f6fb;}
+.navbar-brand{width:80%; margin:15px 30px 0; background:#3f50f6;}
+.logo-icon img{width:200px; height:auto;}
+.profile-section{padding-bottom:8%;}
+#btnLogout{display:block; padding:6px 8px; margin:12px auto 0;}
+.sidebar-nav{margin-top:10px;}
+.scroll-sidebar{height:111vh;}
+.side-attendance h5{width:80%; height:20px; margin-top:7%; margin-left:8%; text-align:left;} 
+.side-attendance p{width:80%; height:15px; margin-top:8%; margin-left:8%;}
+.side-attendance p span{float:right;}
+.side-attendance .btn_wrap{margin-left:7%; margin-top:10%;}
+.side-attendance .btn-outline-info{width:42%; border-radius:5px;}
+.side-attendance .btn_wrap button:first-child{margin-right:2%;}
+
+@media screen and (min-width:992px) and (max-width:1169px) {
+	.navbar-brand{width:65px; margin:0;}
+	.left-sidebar:hover .navbar-brand{width:260px; transition:.2s ease-in;}
+	.logo-icon img{width:100%; height:auto;}
+}
+
+@media screen and (max-width:991px) {
+	.navbar-brand{width:65px; margin:0; /* background:#f2f6fb; */}
+	.left-sidebar:hover .navbar-brand{width:260px; transition:.2s ease-in;}
+	.logo-icon img{width:100%; height:auto;}
+}

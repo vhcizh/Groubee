@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+     <!-- namespace="패키지명.인터페이스" -->
+     <mapper namespace="com.spring.tutorial.dao.AttendanceDAO">         
+         
+         <!-- 일일 근태 확인 -->
+         <select id="attendanceDay" parameterType="String" resultType="com.spring.tutorial.dto.AttendanceDTO">
+            select * from grb_attendance 
+            where id=#{id} AND today LIKE to_date(sysdate,'yyyy-MM-dd')
+            ORDER BY attend_id DESC 
+         </select>                                      
+         
+         <!-- 업무 시작 처리 -->
+         <insert id="attendin" parameterType="String">            
+            INSERT INTO grb_attendance (attend_id, id, attendin, RESULT, state, year, month, day, dy , clock)
+         VALUES((SELECT NVL(Max(attend_id)+1,1) FROM grb_attendance), #{id}, sysdate, 1, '업무', 
+         to_char(sysdate,'yyyy'), to_char(sysdate,'MM'), to_char(sysdate,'dd'), to_char(sysdate,'dy'), to_char(sysdate, 'HH24:MI:SS'))
+         </insert>                
+         
+         <!-- 업무 종료 처리 -->
+      <insert id="attendout" parameterType="String">            
+            INSERT INTO grb_attendance (attend_id, id, attendout, RESULT, state, year, month, day, dy, clock)
+         VALUES((SELECT NVL(Max(attend_id)+1,1) FROM grb_attendance), #{id}, sysdate, 0, '업무종료', 
+         to_char(sysdate,'yyyy'), to_char(sysdate,'MM'), to_char(sysdate,'dd'), to_char(sysdate,'dy'), to_char(sysdate, 'HH24:MI:SS'))
+         </insert> 
+      
+         <!-- 일일 근무 시간 update -->
+         <update id="updateworktime" parameterType="java.util.Map">
+            update grb_attendance set worktime=#{worktime}
+            where id=#{id} and attend_id=(SELECT max(attend_id) FROM grb_attendance)
+         </update>
+      
+      <!-- 일일 근무 시간 -->
+      <select id="daywork" parameterType="String" resultType="Integer">               
+         SELECT to_number(sum(worktime)) FROM grb_attendance
+         WHERE id=#{id} AND state='업무종료' 
+         AND today LIKE to_date(sysdate, 'yyyy-MM-dd')                  
+      </select>
+      
+      <!-- 주간 누적+연장 근무 시간 -->
+      <select id="workover" parameterType="java.util.Map" resultType="Integer">
+         <![CDATA[         
+         SELECT DISTINCT to_number(sum(
+            (SELECT sum(worktime) FROM grb_attendance 
+            WHERE id=#{id}  AND state IN ('업무종료','연장')
+            AND month LIKE to_char(sysdate, 'MM')         
+            AND #{start} <= day AND day <= #{end}) +
+            (SELECT sum(overtime) FROM grb_attendance
+            WHERE id=#{id}  AND state IN ('업무종료','연장')
+            AND month LIKE to_char(sysdate, 'MM')         
+            AND #{start} <= day AND day <= #{end})
+         )) AS worktime
+         FROM grb_attendance
+         WHERE id=#{id}  AND state IN ('업무종료','연장')
+         AND month LIKE to_char(sysdate, 'MM')         
+         AND #{start} <= day AND day <= #{end}
+         GROUP BY worktime, overtime
+          ]]>
+      </select>
+      
+      <!-- 주간 누적 근무 시간 -->
+      <select id="worktime" parameterType="java.util.Map" resultType="Integer">
+         <![CDATA[         
+         SELECT to_number(sum(worktime)) FROM grb_attendance 
+         WHERE id=#{id}  AND state = '업무종료'
+         AND month LIKE to_char(sysdate, 'MM')         
+         AND #{start} <= day AND day <= #{end}         
+         ]]>
+      </select>
+      
+      <!-- 주간 연장 근무 시간 -->
+      <select id="overtime" parameterType="java.util.Map" resultType="Integer">
+         <![CDATA[         
+         SELECT to_number(sum(overtime)) FROM grb_attendance 
+         WHERE id=#{id}  AND state = '연장'
+         AND month LIKE to_char(sysdate, 'MM')         
+         AND #{start} <= day AND day <= #{end}         
+         ]]>
+      </select>      
+         
+      <!-- 나의 주간 근무 조회 -->
+         <select id="attendanceWeek" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AttendanceDTO">
+            <![CDATA[
+            SELECT * FROM grb_attendance
+         WHERE id=#{id} AND month LIKE to_char(sysdate, 'MM')
+         AND #{start} <= day AND day <= #{end}
+         ORDER BY today
+          ]]>
+         </select>                         
+         
+         <!-- 월 연장 근무 시간 -->
+      <select id="overmonth" parameterType="java.util.Map" resultType="Integer">               
+         SELECT to_number(sum(overtime)) FROM grb_attendance 
+         WHERE id=#{id}  AND state = '연장'
+         AND month=to_number(#{month})                  
+      </select>
+         
+         <!-- 나의 월 근무 시간 -->
+         <select id="monthwork" parameterType="java.util.Map" resultType="Integer">                 
+            SELECT to_number(sum(worktime)) FROM grb_attendance
+         WHERE id=#{id} AND month=to_number(#{month})          
+         </select>
+         
+         <!-- 월 근태 현황 -->        
+         <select id="attendanceMonth" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AttendanceDTO">
+            select * from grb_attendance 
+            where id=#{id} AND month=to_number(#{month})      
+            ORDER BY DAY, today
+         </select>
+         
+         <!-- 주 연장 카운트 -->
+         <select id="overweek_cnt" parameterType="java.util.Map" resultType="Integer">
+            <![CDATA[                 
+            SELECT count(overtime) FROM grb_attendance
+         WHERE id=#{id} AND month LIKE to_char(sysdate, 'MM')
+         AND #{start} <= day AND day <= #{end}
+          ]]>             
+         </select> 
+         
+         <!-- 월 연장 카운트 -->         
+         <select id="overmonth_cnt" parameterType="java.util.Map" resultType="Integer">                 
+            SELECT count(overtime) FROM grb_attendance
+         WHERE id=#{id} AND month=to_number(#{month})             
+         </select>  
+         
+         <!-- 월 출근 카운트 -->
+         <select id="attendin_cnt" parameterType="String" resultType="Integer">                 
+            SELECT count(attendin) FROM grb_attendance
+         WHERE id=#{id} AND month LIKE to_char(sysdate, 'MM')             
+         </select>                  
+      
+      <!-- 최종 근무 날짜 -->
+      <select id="day_cnt" parameterType="String" resultType="Integer">  
+         SELECT to_number(max(day)) FROM grb_attendance
+         WHERE id=#{id} AND month LIKE to_char(sysdate, 'MM')
+      </select>
+      
+      <!-- 월 지각 카운트 -->
+      <select id="late_cnt" parameterType="String" resultType="Integer">  
+         SELECT count(ATTENDIN) FROM grb_attendance
+         WHERE id=#{id} AND clock >= (SELECT ATTENDIN FROM C_ATTENDANCE) 
+         AND month LIKE to_char(sysdate, 'MM')
+      </select>
+      
+      <!-- 사원 등록 시 연차 발생 -->
+      <insert id="newannual" parameterType="java.util.Map">  
+         INSERT INTO grb_annual (annual_id, id)
+         VALUES((SELECT NVL(Max(annual_id)+1,1) FROM grb_annual), #{id})
+      </insert>
+      
+      <!-- 연도별 내 연차 내역 -->
+      <select id="attendanceRestInfo" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.*, m.image, m.name, m.depart_name         
+         FROM grb_annual a JOIN grb_member m ON a.ID = m.ID
+         WHERE a.id=#{id} and year=#{year} AND annual IN ('연차', '반차')
+         ORDER BY annual_id desc
+      </select>
+      
+      <!-- 연도별 발생 연차 연차 사용 확인 -->
+      <select id="yearRestInfo" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.annual_id, a.id, a.today, a.annual_in, a.annual_out, a.annual, a.annualtotal,
+         a.YEAR, a.MONTH, a.state, m.image, m.name, m.depart_name, 
+         (SELECT sum(annualuse) FROM grb_annual WHERE year=#{year} and id=#{id}) AS annualuse,
+         (SELECT min(annualrest) FROM grb_annual WHERE year=#{year} and id=#{id}) AS annualrest
+         FROM grb_annual a JOIN grb_member m ON a.ID = m.ID 
+         WHERE a.id=#{id} and year=#{year}
+         ORDER BY ANNUAL_ID desc 
+      </select>
+      
+      <!-- 연차 반차 신청 -->
+      <insert id="request_rest" parameterType="java.util.Map">  
+         INSERT INTO grb_annual (annual_id, id, annual, annualuse, annualrest, annual_in, annual_out, state)
+         VALUES((SELECT NVL(Max(annual_id)+1,1) FROM grb_annual), #{id}, #{annual}, to_number(#{annualuse}), to_number(#{annualrest}), to_date(#{annual_in}, 'yyyy-MM-dd'), to_date(#{annual_out}, 'yyyy-MM-dd'), '신청')
+      </insert>
+      
+      <!-- 연장 근무 신청 -->
+      <insert id="request_over" parameterType="java.util.Map">  
+         INSERT INTO grb_attendance (attend_id, id, attendin, attendout, RESULT, overtime, state, year, month, day, dy, clock)
+         VALUES((SELECT NVL(Max(attend_id)+1,1) FROM grb_attendance), #{id}, #{attendin}, #{attendout}, 1, #{overtime}, '연장', 
+         to_char(sysdate,'yyyy'), to_char(sysdate,'MM'), to_char(sysdate,'dd'), to_char(sysdate,'dy'), to_char(sysdate, 'HH24:MI:SS'))
+      </insert>
+      
+      <!-- 일일 연장 신청 1회 -->
+      <select id="over_cnt" parameterType="String" resultType="int">  
+         SELECT to_number(count(overtime)) FROM grb_attendance
+         WHERE id=#{id} AND day LIKE to_char(sysdate, 'dd') 
+         AND month LIKE to_char(sysdate, 'MM') and year LIKE to_char(sysdate, 'yyyy') 
+      </select>
+      
+      <!-- 부서 근태 내역 -->
+         <select id="departmonth" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AttendanceDTO">
+            select a.*, m.depart_name, m.name from grb_attendance a
+         JOIN grb_member m ON a.id = m.id
+         where depart_name=#{depart_name} AND month=to_number(#{month})
+         and a.year=to_number(#{year})      
+            ORDER BY DAY desc, today desc            
+         </select>         
+         
+         <!-- 부서 월간 통계  -->
+         <!-- 부서 업무 cnt -->
+      <select id="departattendin_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendin)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND month=to_number(#{month})
+         and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 부서 업무종료 cnt -->
+      <select id="departattendout_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendout)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND month=to_number(#{month})
+         and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 부서 연장 cnt -->
+      <select id="departover_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.overtime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND month=to_number(#{month})
+         and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 부서 지각 cnt -->
+      <select id="departlate_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendin)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND month=to_number(#{month})
+         and a.year=to_number(#{year})
+         AND to_char(a.attendin, 'HH24:MI:SS') >= (SELECT attendin FROM C_ATTENDANCE)
+      </select>
+      
+      <!-- 부서 연차 cnt -->
+      <select id="departfull_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND a.month=to_number(#{month}) 
+         and a.year=to_number(#{year}) and annual = '연차'
+      </select>
+      
+      <!-- 부서 반차 cnt -->
+      <select id="departhalf_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND a.month=to_number(#{month}) 
+         and a.year=to_number(#{year}) and annual = '반차'
+      </select>
+         
+         <!-- 부서 업무 time -->
+      <select id="departattendtime" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(sum(a.worktime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND a.month=to_number(#{month})
+         and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 부서 연장 time -->
+      <select id="departovertime" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(sum(a.overtime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} AND a.month=to_number(#{month})
+         and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 부서 월간 연차 내역 -->
+      <select id="annualDepart" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.*, m.image, m.name, m.hireday, m.depart_name FROM grb_annual a 
+         JOIN grb_member m ON a.ID = m.ID 
+         WHERE m.depart_name=#{depart_name} and a.year=to_number(#{year})
+         AND MONTH=to_number(#{month}) AND annual IN ('연차', '반차')
+         ORDER BY ANNUAL_ID desc
+      </select>
+      
+      <!-- 부서원 연간 연차 현황 -->
+      <select id="departRestInfo" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.id, a.annualtotal, m.depart_name, m.name, m.image, m.hireday
+         , to_number(sum(annualuse)) AS annualuse, to_number(min(annualrest)) AS annualrest         
+         FROM grb_annual a 
+         JOIN grb_member m ON a.ID = m.ID 
+         WHERE m.depart_name=#{depart_name} and year=to_number(#{year})
+         GROUP BY a.id,a.annualtotal, m.depart_name, m.name, m.image, m.hireday
+         ORDER BY id
+      </select>
+      
+      <!-- 부서 월간 업무종료 이력이 있는  사원 -->
+         <select id="departworkcheck" parameterType="java.util.Map" resultType="int">  
+         SELECT count(count(a.attendout)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE m.depart_name=#{depart_name} and month=to_number(#{month}) and year=to_number(#{year})
+         GROUP BY a.id
+      </select>
+      
+      <!-- 전사 근태 내역 -->
+      <select id="attendGrb" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AttendanceDTO">
+            select a.*, m.depart_name, m.name from grb_attendance a
+         JOIN grb_member m ON a.id = m.id
+         where a.year=to_number(#{year}) and month=to_number(#{month})      
+            ORDER BY DAY desc, depart_name, today desc      
+         </select>
+         
+         <!-- 전사 월간 통계  -->
+         <!-- 전사 월간 업무종료 이력이 있는  사원 -->
+         <select id="grbworkcheck" parameterType="java.util.Map" resultType="int">  
+         SELECT count(count(a.attendout)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE month=to_number(#{month}) and year=to_number(#{year})
+         GROUP BY a.id
+      </select>
+      
+         <!-- 전사 업무 cnt -->
+      <select id="grbattendin_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendin)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE month=to_number(#{month}) and year=to_number(#{year})
+      </select>
+      
+         <!-- 전사 업무종료 cnt -->
+      <select id="grbattendout_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendout)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE month=to_number(#{month}) and year=to_number(#{year})
+      </select>
+      
+      <!-- 전사 연장 cnt -->
+      <select id="grbover_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.overtime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE month=to_number(#{month}) and year=to_number(#{year})
+      </select>
+      
+      <!-- 전사 지각 cnt -->
+      <select id="grblate_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.attendin)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE month=to_number(#{month}) and year=to_number(#{year})
+         AND to_char(a.attendin, 'HH24:MI:SS') >= (SELECT attendin FROM C_ATTENDANCE)
+      </select>
+         
+         <!-- 전사 연차 cnt -->
+      <select id="grbfull_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) and annual = '연차'
+      </select>
+      
+      <!-- 전사 반차 cnt -->
+      <select id="grbhalf_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) and annual = '반차'
+      </select>
+         
+         <!-- 전사 월간 업무 time -->
+      <select id="grbattendtime" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(sum(a.worktime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE a.month=to_number(#{month}) and a.year=to_number(#{year})
+      </select>
+      
+      <!-- 전사 월간 연장 time -->
+      <select id="grbovertime" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(sum(a.overtime)) FROM grb_attendance a
+         join grb_member m on m.id = a.id
+         WHERE a.month=to_number(#{month}) and a.year=to_number(#{year})
+      </select>
+         
+         <!-- 전사 월간 연차 내역 -->
+      <select id="annualGrb" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.*, m.image, m.name, m.hireday, m.depart_name FROM grb_annual a 
+         JOIN grb_member m ON a.ID = m.ID 
+         WHERE year=to_number(#{year}) AND MONTH=to_number(#{month}) AND annual IN ('연차', '반차')
+         ORDER BY depart_name, ANNUAL_ID desc
+      </select>
+      
+      <!-- 전사원 연간 연차 현황 -->
+      <select id="grbRestInfo" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.AnnualDTO">  
+         SELECT a.id, a.annualtotal, m.depart_name, m.name, m.image, m.hireday
+         , to_number(sum(annualuse)) AS annualuse, to_number(min(annualrest)) AS annualrest         
+         FROM grb_annual a 
+         JOIN grb_member m ON a.ID = m.ID 
+         WHERE year=to_number(#{year})
+         GROUP BY a.id,a.annualtotal, m.depart_name, m.name, m.image, m.hireday
+         ORDER BY depart_name, id
+      </select>
+      
+      
+      <!-- 사업부 연차+반차 cnt -->
+      <select id="bus_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='사업부'
+      </select>
+      
+      <!-- 영업부 연차+반차 cnt -->
+      <select id="sale_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='영업부'
+      </select>
+      
+      <!-- 개발부 연차+반차 cnt -->
+      <select id="it_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='개발부'
+      </select>
+      
+      <!-- 인사부 연차+반차 cnt -->
+      <select id="human_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='인사부'
+      </select>
+      
+      <!-- 경영지원부 연차+반차 cnt -->
+      <select id="sup_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='경영지원부'
+      </select>
+      
+      <!-- 총무부 연차+반차 cnt -->
+      <select id="acc_cnt" parameterType="java.util.Map" resultType="int">  
+         SELECT to_number(count(a.annual_in)) FROM grb_annual a
+         join grb_member m on m.id = a.id
+         WHERE a.year=to_number(#{year}) and a.month=to_number(#{month}) 
+         and annual IN ('반차', '연차') and depart_name='총무부'
+      </select>
+      
+      <!-- 회사 내규 업무종료 시간  -->
+      <select id="c_attendout" parameterType="java.util.Map" resultType="String">  
+         SELECT attendout FROM c_attendance      
+      </select>
+      
+     </mapper>

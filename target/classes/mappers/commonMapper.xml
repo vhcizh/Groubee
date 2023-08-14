@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+     <!-- namespace="패키지명.인터페이스" -->
+     <mapper namespace="com.spring.tutorial.dao.CommonDAO"> 
+   		
+   		<!-- id="메서드명" parameterType="매개변수 파일의 경로" resultTyple="자료형"
+   			insert, update, delete의 경우에는 int 반환이므로 Mybatis가 자동처리 (생략 가능)
+   			Mybatis에서 변수는 #{ }으로 표현한다
+   		-->
+   		<!-- id 등록 여부 체크  -->
+   		<select id="idCheck" parameterType="String" resultType="int">
+   			select count(*) from grb_member where id=#{id}
+   		</select>
+   		
+   		<!-- 사원 등록 처리 --><!-- 시큐리티 : key 컬럼 추가 -->
+   		<insert id="insertMember" parameterType="com.spring.tutorial.dto.CommonDTO">   			
+		    INSERT INTO grb_member(id, pwd, name, jumin1, jumin2, gender, marry, frgn, nation, tel, email_in, email_out, address, depart_name, company_id, rank, hireday, state, key)
+			VALUES((SELECT NVL(Max(id)+1,1) FROM grb_member), #{pwd}, #{name}, #{jumin1}, #{jumin2}, #{gender}, #{marry}, #{frgn}, #{nation}, #{tel}, #{email_in}, #{email_out}, #{address}, #{depart_name}, 1, #{rank}, sysdate, '재직', #{key})
+   		</insert>  		
+   		
+   		
+   		<!-- 비밀번호 확인 -->
+   		<select id="passwordCheck" parameterType="String" resultType="int">
+   			select pwd from grb_member where id=#{id}
+   		</select>
+   		
+   		<!-- 시큐리티에서 selectCusomer로 로그인하므로 주석 처리 -->
+   		<!-- 아이디 비밀번호 확인  -->
+   		<!-- Map에 추가(put)된 키명와 #{변수명}은 반드시 일치해야 한다. -->
+   		<!-- <select id="idPasswordChk" parameterType="java.util.Map" resultType="int">
+   			select count(*) from grb_member where id=#{id} and pwd=#{pwd}
+   		</select> -->
+   		
+   		
+   		<!-- 사원 퇴사 처리 > 노출 0 -->  		
+   		<!-- <update id="deleteMember" parameterType="String"> 
+   			update grb_member set state = 0 where id=#{id}
+   		</update> -->
+   		
+   		<!-- 사원 상세페이지 -->
+   		<!-- <select id="getMemberDetail" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+   			select * from grb_member where id=#{id}
+   		</select> -->
+   		
+   		<!-- 사원 수정 처리 -->
+   		<!-- <update id="updateMember" parameterType="com.spring.tutorial.dto.CommonDTO">
+   			update grb_member
+				set password=#{password}, name=#{name}, birthday=#{birthday}, address=#{address}, phone=#{phone}, email=#{email} 
+				where id=#{id}
+   		</update> -->
+   		
+   		<!-- 시큐리티 : UserAuthenticationService  loadUserByUsername()에서 호출 -->
+   		<select id="selectCustomer" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+   			select * from grb_member where id=#{id}
+   		</select>
+   		
+   		<!-- 시큐리티 : UserLoginSuccessHandler에서 호출 -->
+   		<select id="authorityCheck" resultType="String">
+   			select authority from grb_member where id=#{id}
+   		</select>
+   		
+   		<!-- 시큐리티 - UserLoginFailureHandler에서 호출 -->
+    	<select id="pwdCheck" parameterType="String" resultType="String">
+       		SELECT pwd FROM grb_member WHERE id=#{id}
+    	</select>
+
+		<!-- 시큐리티 : 로그인 전 이메일 인증을 해야 한다. -->
+		<select id="selectKey" parameterType="String" resultType="int">
+			SELECT COUNT(*) FROM grb_member WHERE key=#{key}
+		</select>
+
+		<!-- 시큐리티 : 로그인 전 이메일 인증을 해야 하며, 1로 수정 -->
+		<update id="updateGrade" parameterType="String">
+			UPDATE grb_member
+			SET enabled=1
+			WHERE key=#{key}
+		</update>		
+		
+     </mapper>

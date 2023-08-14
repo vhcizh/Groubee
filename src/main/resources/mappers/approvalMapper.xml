@@ -1,0 +1,580 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+     <!-- namespace="패키지명.인터페이스" -->
+     <mapper namespace="com.spring.tutorial.dao.ApprovalDAO"> 
+   		
+   		<!-- id="메서드명" parameterType="매개변수 파일의 경로" resultTyple="자료형"
+   			insert, update, delete의 경우에는 int 반환이므로 Mybatis가 자동처리 (생략 가능)
+   			Mybatis에서 변수는 #{ }으로 표현한다
+   		-->
+   		
+   		<!-- 결재정보 => 사원정보 -->
+   		<select id = "selectMember" resultType="com.spring.tutorial.dto.CommonDTO">
+			select id, name, depart_name, rank from grb_member 
+			where state = '재직' 
+			and show = 1 
+			and depart_name in ((select depart_name from grb_member where id = #{id}), '총무부')
+			or rank = '사장'
+			order by decode(depart_name, (select depart_name from grb_member where id = #{id}), 1, '총무부', 2), 
+			decode(rank, '사장', 5, '부서장', 4, '팀장', 3, '대리', 2, '사원', 1)
+   		</select>
+   		
+   		<!-- 결재정보 => 사원정보 -->
+   		<select id = "selectAllMember" resultType="com.spring.tutorial.dto.CommonDTO">
+			select id, name, depart_name, rank from grb_member 
+			where state = '재직' 
+			and show = 1 
+			order by depart_name, 
+			decode(rank, '사장', 5, '부서장', 4, '팀장', 3, '대리', 2, '사원', 1)
+   		</select>
+   		
+   		<!-- 결재라인 있는지 확인  -->
+		<select id = "approvalInfoDel_sel" resultType = "int">
+			select COUNT(*) from grb_approvalinfo 
+			where load_id = (SELECT NVL(Max(doc_id)+1,1) FROM grb_draft)
+		</select>
+				
+		<!-- 결재라인 삭제 (결재라인 있는지 확인 후 삭제 시 사용) -->
+		<delete id = "approvalInfoDelete">
+			delete from grb_approvalinfo 
+			where load_id = (SELECT NVL(Max(doc_id)+1,1) FROM grb_draft)
+		</delete>
+   		   		
+   		<!-- 결재정보 저장하기 -->
+   		<insert id = "approvalInfoInsert" parameterType="java.util.Map">
+   			INSERT INTO grb_approvalinfo(id, getter_id, load_id, load_num, load_status, co_approve, category) 
+			VALUES(#{id}, #{getter_id}, 
+			(SELECT NVL(Max(doc_id)+1,1) FROM grb_draft), 
+			(SELECT NVL(Max(load_num)+1,1) FROM grb_approvalinfo), 
+			default, default, #{category})
+   		</insert>
+   		
+   		<!-- 결재라인 수정 전 삭제 (결재라인 있는지 확인 후 삭제 시 사용) -->
+		<delete id = "deleteLineforUpdate">
+			delete from grb_approvalinfo 
+			where load_id = #{load_id}
+		</delete>
+   		
+   		<!-- 결재정보 수정하기 -->
+   		<insert id = "updateline" parameterType="java.util.Map">
+   			INSERT INTO grb_approvalinfo(id, getter_id, load_id, load_num, load_status, co_approve, category) 
+			VALUES(#{id}, #{getter_id}, #{doc_id}, 
+			(SELECT NVL(Max(load_num)+1,1) FROM grb_approvalinfo), 
+			default, default, #{category})
+   		</insert>
+   		
+   		<!-- 문서정보 저장 -->
+		<update id = "updateForm">
+			update grb_approvalinfo 
+			set form_name = #{form_name}
+			where load_id = (SELECT NVL(Max(doc_id)+1,1) FROM grb_draft)
+		</update>
+   		   		
+   		
+   		<!-- 결재정보 출력 -->
+   		<select id = "selectLineView" resultType="com.spring.tutorial.dto.ApprovalInfoDTO">
+   			select m.*, a.* from grb_approvalinfo a 
+   			join grb_member m on m.id = a.getter_id 
+   			where load_id = (SELECT NVL(Max(doc_id)+1,1) FROM grb_draft) 
+   			order by load_num
+   		</select>
+   		
+   		<!-- 결재정보 출력2 -->
+   		<select id = "reselectLineView" resultType="com.spring.tutorial.dto.ApprovalInfoDTO">
+   			select m.*, a.* from grb_approvalinfo a 
+   			join grb_member m on m.id = a.getter_id 
+   			where load_id = #{doc_id}
+   			order by load_num
+   		</select>
+   		
+   		<!-- 결재, 협조 수정 -->
+   		<update id = "updateCoApproval" parameterType="java.util.Map">
+   			update grb_approvalInfo 
+   			set co_approve = #{co_approve} 
+   			where load_id = #{load_id} AND getter_id = #{getter_id}
+   		</update>
+   		
+		<!-- 결재라인 개별삭제 -->
+		<delete id = "deleteCoApproval" parameterType="java.util.Map">
+			delete from grb_approvalInfo 
+			where load_id = #{load_id} 
+			AND getter_id = #{getter_id}
+		</delete>
+		
+		<!-- 결재정보 => 기안사원정보 -->
+   		<select id = "selectapprover" resultType="com.spring.tutorial.dto.CommonDTO">
+   			select m.*, a.* from grb_member m 
+   			join grb_approvalinfo a on a.id = m.id 
+   			where load_id = (SELECT NVL(Max(doc_id)+1,1) FROM grb_draft)
+   		</select> 
+   		
+		<!-- 결재정보 => 기안사원정보2 -->
+   		<select id = "reselectapprover" resultType="com.spring.tutorial.dto.CommonDTO">
+   			select m.*, a.* from grb_member m 
+   			join grb_approvalinfo a on a.id = m.id 
+   			where load_id = #{doc_id}
+   		</select> 
+   		
+
+		<!-- 임시저장 -->
+   		<select id = "tempSave" parameterType="com.spring.tutorial.dto.ApproveDraftDTO">
+   			INSERT INTO grb_draft(doc_id, load_id, id, depart_name, category, title, content, show, state, stateid, upday, files, form_name)
+			VALUES(#{load_id}, #{load_id}, #{id}, #{depart_name}, #{category}, #{title}, #{content}, 1, '임시', 'temp', sysdate, 
+			(SELECT NULLIF(#{files}, #{nonfiles}) FROM dual), #{form_name})
+   		</select> 
+		
+		<!-- 문서기안 -->
+   		<select id = "approvereq" parameterType="com.spring.tutorial.dto.ApproveDraftDTO">
+   			INSERT INTO grb_draft(doc_id, load_id, id, depart_name, category, title, content, show, state, stateid, upday, files, form_name)
+			VALUES(#{load_id}, #{load_id}, #{id}, #{depart_name}, #{category}, #{title}, #{content}, 1, '진행', 'on', sysdate, 
+			(SELECT NULLIF(#{files}, #{nonfiles}) FROM dual), 
+			#{form_name})
+   		</select> 
+   		
+   		<!-- 문서정보 -->
+   		<select id = "selectDraftInfo" resultType="com.spring.tutorial.dto.ApproveDraftDTO">
+   			select * from grb_draft where load_id = #{load_id}
+   		</select>
+   		
+   		<!-- 결재라인 사원정보 -->
+   		<select id = "selectGetterInfo" resultType="com.spring.tutorial.dto.ApprovalInfoDTO">
+   			select * 
+			from grb_draft d 
+			join grb_approvalinfo a on d.load_id = a.load_id  
+			join grb_member m on a.getter_id = m.id
+			where a.load_id = #{load_id}
+			and a.load_num > 0
+			order by load_num
+		</select>
+		
+		<!-- 기안정보 => 기안사원정보 -->
+   		<select id = "selectapproverAfterApp" resultType="com.spring.tutorial.dto.ApprovalInfoDTO">
+   			select * 
+			from grb_draft d 
+			join grb_approvalinfo a on d.load_id = a.load_id  
+			join grb_member m on a.id = m.id
+			where a.load_id = #{load_id}
+		</select>
+		
+		
+   		<!-- 기안진행문서함 -->
+   		<select id = "onapproval" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.ApproveDraftDTO">
+   			 <![CDATA[
+   			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (SELECT doc_id, load_id, depart_name, category, title, show, upday, files, state, stateid, 
+			            			 (SELECT COUNT(*) FROM grb_draft WHERE id = #{id} and stateid = 'on')
+	                    		FROM grb_draft b
+			                    WHERE show = 1
+			                      AND stateid = 'on'
+			                      AND id = #{id}
+			                    ORDER BY doc_id DESC
+			                ) A
+			       )
+	        WHERE rn >= #{start} AND rn <= #{end}
+			 ]]>
+		</select>
+		
+   		<!-- 완료문서함 -->
+   		<select id = "approvalList" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.ApproveDraftDTO">
+	   		<![CDATA[
+			SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state
+			                       ,(select depart_name from grb_member where id = #{id})
+			                       ,(select name from grb_member where id = #{id})
+			                from grb_draft d 
+			                join grb_member a on d.id = a.id
+			                group by d.doc_id, d.title, d.upday, d.id, d.category, d.stateid, d.state
+			                having stateid = 'on'
+			                and d.id = #{id}
+			                order by d.doc_id desc) A
+			                       )
+			WHERE rn >= 1 AND rn <= 10;
+			 ]]>
+		</select>
+		
+		<!-- 기안자기준 - 기안, 진행, 반려함 게시글 갯수 -->
+		<select id = "boardCnt" resultType="int" parameterType="java.util.Map">
+			SELECT count(*) as cnt FROM grb_draft WHERE id = #{id} and stateid = #{stateid} and show = 1	
+		</select>
+		
+		
+
+   		<!-- 반려문서함 -->
+   		<select id = "rejapproval" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.ApproveDraftDTO">
+	   		<![CDATA[
+			SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (SELECT doc_id, load_id, depart_name, category, title, show, upday, files, state, stateid,
+			            			 (SELECT COUNT(*) FROM grb_draft WHERE id = #{id} and stateid = 'rej')
+	                    		FROM grb_draft b
+			                    WHERE show = 1
+			                      AND stateid = 'rej'
+			                    ORDER BY doc_id DESC
+			                ) A
+			       )
+	        WHERE rn >= #{start} AND rn <= #{end}
+			 ]]>
+		</select>
+		
+   		<!-- 임시보관함 -->
+   		<select id = "templist" resultType="com.spring.tutorial.dto.ApproveDraftDTO">
+	   		<![CDATA[
+	   			SELECT *
+				 FROM (SELECT A.*, rownum as rn
+				            FROM (SELECT doc_id, load_id, depart_name, category, title, show, upday, files, state, stateid,
+				            			 (SELECT COUNT(*) FROM grb_draft WHERE id = #{id} and stateid = 'temp')
+		                    		FROM grb_draft b
+				                    WHERE show = 1
+				                      AND stateid = 'temp'
+				                    ORDER BY doc_id DESC
+				                ) A
+				       )
+		        WHERE rn >= #{start} AND rn <= #{end}
+				 ]]>
+		</select>
+		
+		<!-- 임시보관함(결재문서) 삭제  -->
+		<delete id = "deleteTemp" parameterType="int">
+			delete from grb_draft where doc_id = #{doc_id} 
+		</delete>
+		
+		<!-- 결재라인삭제 -->
+		<delete id = "deleteTempLine" parameterType="int">
+			delete from grb_approvalinfo where load_id = #{load_id} 
+		</delete>
+		
+		<!-- 결재라인 별 결재여부 확인(기안자 회수버튼) -->
+		<select id = "loadstatecheck" resultType="int" parameterType="int">
+			select count(*) from grb_approvalinfo where load_id = #{load_id} and load_status = '결재'
+		</select>
+		
+		<!-- 회수하기 -->
+		<update id = "rollbackdoc" parameterType="int">
+			update grb_draft set state = '임시', stateid = 'temp' where doc_id = #{doc_id}
+		</update>
+		
+		<!-- 임시보관 -> 임시보관 -->
+		<update id = "tempSavetep" parameterType="com.spring.tutorial.dto.ApproveDraftDTO">
+			update grb_draft set title = #{title}, content = #{content}, files = (SELECT NULLIF(#{files}, #{nonfiles}) FROM dual), upday = sysdate, state = '임시', stateid = 'temp' where doc_id = #{doc_id}
+		</update>	
+			
+		
+		<!-- 임시보관, 미결재기안문  -> 기안 -->
+		<update id = "approvereqtep" parameterType="com.spring.tutorial.dto.ApproveDraftDTO">
+			update grb_draft set title = #{title}, content = #{content}, files = (SELECT NULLIF(#{files}, #{nonfiles}) FROM dual), upday = sysdate, state = '진행', stateid = 'on' where doc_id = #{doc_id}
+		</update>	
+			
+		<!-- 결재대기문서 리스트  -->
+   		<select id = "checkoutlist" resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+	   		<![CDATA[
+	   		 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select *
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id
+			                    join grb_member m on m.id = d.id  
+			                    where a.load_num in(select min(load_num)
+			                                  from grb_approvalinfo
+			                                  group by load_id, load_status
+			                                  having min(load_num) > 0
+			                                  and load_status = '결재대기'
+			                                  )
+			                    and d.stateid = 'on'
+			                    and a.getter_id = #{id}
+			                    order by d.doc_id desc) A
+			       )
+			        WHERE rn >= #{start} AND rn <= #{end}
+				 ]]>
+		</select>	
+		
+		<!-- 결재대기문서함 게시글 갯수 -->
+		<select id = "checkoutboardCnt" resultType="int" parameterType="java.util.Map">
+	   		 SELECT count(*)
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select * 
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id  
+			                    where a.load_num in(select min(load_num)
+			                                  from grb_approvalinfo
+			                                  group by load_id, load_status
+			                                  having min(load_num) > 0
+			                                  and load_status = '결재대기'
+			                                  )
+			                    and d.stateid = 'on'
+			                    and a.getter_id = #{id}
+			                    order by d.doc_id desc) A
+			       )
+		</select>
+		
+		
+		
+		<!-- 결재완료문서 리스트(기안자기준) -->
+		<select id = "comapproval"  resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state
+			                       ,(select depart_name from grb_member where id = #{id})
+			                       ,(select name from grb_member where id = #{id}) 
+			                from grb_draft d 
+			                join grb_member a on d.id = a.id
+			                group by d.doc_id, d.title, d.upday, d.id, d.category, d.stateid, d.state
+			                having stateid = 'com'
+			                and d.id = #{id}
+			                order by d.doc_id desc) A
+			        )
+			WHERE rn >= #{start} AND rn <= #{end}
+			 ]]>
+		</select>
+		
+		<!-- 결재완료문서 리스트(기안자 기준) 게시글 갯수 -->
+		<select id = "comapprovalcnt" resultType="int" parameterType="java.util.Map">
+			 SELECT count(*)
+			 FROM ((select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state
+			                       ,(select depart_name from grb_member where id = #{id})
+			                       ,(select name from grb_member where id = #{id})
+			                from grb_draft d 
+			                join grb_member a on d.id = a.id
+			                group by d.doc_id, d.title, d.upday, d.id, d.category, d.stateid, d.state
+			                having stateid = #{stateid}
+			                and d.id = #{id}
+			                order by d.doc_id desc)
+                 )
+		</select>
+		
+		<!-- 결재예정함 리스트 -->
+		<select id = "preApplist" resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select * 
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id
+			                    join grb_member m on m.id = d.id
+			                    where load_status = '결재대기'
+			                    and d.stateid = 'on'
+			                    and a.getter_id = #{getter_id}
+			                    order by d.doc_id desc) A
+			       )
+			WHERE rn >= #{start} AND rn <= #{end}
+			 ]]>
+		</select>
+		
+		<!-- 결재예정함 게시글 갯수 -->
+		<select id = "preApplistcnt" resultType="int" parameterType="java.util.Map">
+			 SELECT count(*)
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select * 
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id  
+			                    where load_status = '결재대기'
+			                    and d.stateid = #{stateid}
+			                    and a.getter_id = #{id}
+			                    order by d.doc_id desc) A
+			       )
+		</select>
+		
+		<!-- 결재완료문서 리스트(결재자시점) -->
+		<select id = "completedraftListbygetter" resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state, a.load_status, a.id
+			                       ,(select depart_name from grb_member where id = #{id})
+			                       ,(select name from grb_member where id = #{id}) name
+			                from grb_draft d 
+			                join grb_approvalinfo a on d.load_id = a.load_id
+			                where a.getter_id = #{id}
+			                and a.load_status = '결재'
+			                order by d.doc_id desc) A
+			                       )
+			WHERE rn >= #{start} AND rn <= #{end}
+			]]>
+			
+		</select>
+		
+		<!-- 결재완료문서 게시글 갯수 (결재자시점)-->
+		<select id = "completedraftListbygettercnt" resultType="int" parameterType="java.util.Map">
+			 SELECT count(*)
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state, a.load_status
+			                       ,(select depart_name from grb_member where id = #{id})
+			                       ,(select name from grb_member where id = #{id})
+			                from grb_draft d 
+			                join grb_approvalinfo a on d.load_id = a.load_id
+			                where a.getter_id = #{id}
+			                and a.load_status = '결재'
+			                order by d.doc_id desc) A
+			                       )
+		</select>
+		
+		
+		<!-- 부서별 결재완료문서 리스트 -->
+		<select id = "completedraftListbyDepart"  resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state
+			               ,(select depart_name from grb_member where id = #{id})
+			               ,(select name from grb_member where id = #{id})
+			        from grb_draft d 
+			        group by d.doc_id, d.title, d.upday, d.category, d.stateid, d.depart_name, d.state
+			        having d.stateid = 'com'
+			        and d.depart_name = (select depart_name from grb_member where id = #{id})
+			        order by d.doc_id desc) A
+			        )
+			WHERE rn >= #{start} AND rn <= #{end}
+			]]>
+		</select>
+		
+		<!-- 부서별 결재완료문서 게시글 갯수 -->
+		<select id = "completedraftListbyDepartcnt" resultType="int" parameterType="java.util.Map">
+			 SELECT count(*)
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select d.doc_id, d.title, d.upday, d.category, d.stateid, d.state
+			               ,(select depart_name from grb_member where id = #{id})
+			               ,(select name from grb_member where id = #{id})
+			        from grb_draft d 
+			        group by d.doc_id, d.title, d.upday, d.category, d.stateid, d.depart_name, d.state
+			        having d.stateid = 'com'
+			        and d.depart_name = (select depart_name from grb_member where id = #{id})
+			        order by d.doc_id desc) A
+			        )
+		</select>
+		
+		
+		<!-- 결재대기문서 결재하기 -->
+		<update id = "confirmdraft" parameterType="java.util.Map">
+			update grb_approvalinfo set load_status = '결재', checkday = sysdate where load_id = #{load_id} and getter_id = #{id}
+		</update>
+		
+		
+		<!-- 결재대기문서 반려하기 -->
+		<update id = "rejectdraft" parameterType="int">
+			update grb_draft set state = '반려', stateid = 'rej' where load_id = #{load_id}
+		</update>
+		
+		
+		<!-- 결재대기문서 반려 후 결재 상태 결재대기로 변경 -->
+		<update id = "rejectstatechg" parameterType="int">
+			update grb_approvalinfo set load_status='결재대기', checkday = null where load_id = #{load_id}
+		</update>
+		
+		
+		<!-- 최종결재자 결재 시 결재완료 -->
+		<update id = "completedraft" parameterType = "int">
+		update grb_draft set state = '완료', stateid = 'com' where load_id = #{load_id} and 
+			(select load_status from grb_approvalinfo where load_id = #{load_id} and load_num = 
+			(select max(load_num) from grb_approvalinfo where load_id = #{load_id})) = '결재'
+		</update>
+		
+		<!-- 회람하기, id select값 -->
+		<insert id = "referAction" parameterType = "java.util.Map">
+			INSERT INTO grb_approvalinfo(id, getter_id, load_id, load_num, load_status, co_approve, category, form_name, checkday) 
+			VALUES((select distinct id from grb_approvalinfo where load_id = #{load_id}), 
+					#{id}, 
+					#{load_id}, 0,
+					'회람', '회람',
+					(select distinct category from grb_approvalinfo where load_id = #{load_id}),
+					(select distinct form_name from grb_approvalinfo where load_id = #{load_id}), 
+					sysdate)
+		</insert>
+		
+		<!-- 회람문서함 -->
+		<select id = "referlistAction"  resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			 SELECT *
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select * 
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id
+			                    join grb_member m on m.id = d.id 
+			                    where a.co_approve= '회람'
+			                    and a.getter_id = #{id}
+			                    order by d.doc_id desc) A
+			       )
+			WHERE rn >= #{start} AND rn <= #{end}
+			]]>
+		</select>
+		
+		<!-- 회람문서함 글 갯수 -->
+		<select id = "referlistActioncnt" resultType="int" parameterType="java.util.Map">
+			 SELECT count(*)
+			 FROM (SELECT A.*, rownum as rn
+			            FROM (select * 
+			                    from grb_draft d 
+			                    join grb_approvalinfo a on d.load_id = a.load_id 
+			                    join grb_member m on m.id = d.id 
+			                    where a.co_approve= '회람'
+			                    and a.getter_id = #{id}
+			                    order by d.doc_id desc) A
+			       )
+		</select>
+		
+		<!-- 회람자리스트 -->
+		<select id = "refermember" resultType = "com.spring.tutorial.dto.ApprovalInfoDTO" parameterType = "int">
+			select * from grb_approvalinfo a join grb_member m on a.getter_id = m.id where load_id = #{load_id} and load_num = 0
+		</select>
+		
+		<!-- 회람여부 select -->
+		<select id = "selectrefer" resultType = "int">
+			SELECT count(*) FROM grb_approvalInfo where load_id = #{load_id} and getter_id = #{id}
+		</select>
+		
+		<!-- 관리자 완료문서함 -->
+		<select id = "approvallistAdmin" resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			  SELECT *
+				 FROM (SELECT A.*, rownum as rn
+				            FROM (select * from grb_draft 
+				                    where category = #{category} 
+				                    and stateid = #{stateid}
+				                    order by doc_id desc) A
+				       )
+				WHERE rn >= 1 AND rn <= 10
+			 ]]>
+		</select>
+		
+		
+		<!-- 관리자 문서함 글 갯수 -->
+		<select id = "adminApprovalListCnt" resultType="int" parameterType="java.util.Map">
+			  SELECT count(*)
+				 FROM (SELECT A.*, rownum as rn
+				            FROM (select * from grb_draft 
+				                    where category = #{category} 
+				                    and stateid = #{stateid}
+				                    order by doc_id desc) A
+				       )
+		</select>
+		
+		
+		<!-- 관리자 완료문서함 전체보기 -->
+		<select id = "approvallistAdminAll" resultType="com.spring.tutorial.dto.ApproveDraftDTO" parameterType="java.util.Map">
+			<![CDATA[
+			  SELECT *
+				 FROM (SELECT A.*, rownum as rn
+				            FROM (select * from grb_draft 
+				                    where stateid = #{stateid}
+				                    order by doc_id desc) A
+				       )
+				WHERE rn >= 1 AND rn <= 10
+			 ]]>
+		</select>
+		
+				<!-- 관리자 문서함 글 갯수 -->
+		<select id = "approvallistAdminAllCnt" resultType="int" parameterType="java.util.Map">
+			  SELECT count(*)
+				 FROM (SELECT A.*, rownum as rn
+				            FROM (select * from grb_draft 
+				                    where stateid = #{stateid}
+				                    order by doc_id desc) A
+				       )
+		</select>
+		
+     </mapper>

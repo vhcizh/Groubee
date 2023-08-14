@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+ <!-- namespace="패키지명.인터페이스" -->
+ <mapper namespace="com.spring.tutorial.dao.AdminHumanDAO"> 
+   		
+    <!-- 관리자 인사관리 -->
+    <select id="membersInfo" resultType="com.spring.tutorial.dto.CommonDTO">
+    	select * from grb_member
+		where show =1 
+		order by id
+    </select>
+    
+    <!-- 관리자 개인정보 상세페이지 -->
+   <select id="usersDetail" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+   		select * from grb_member where id = #{id}
+   </select>
+   
+   <!-- 관리자 개인정보 수정 -->
+   <update id="usersUpdate" parameterType="com.spring.tutorial.dto.CommonDTO">
+  		update grb_member 
+		 set email_in=#{email_in}, address=#{address}, gender= #{gender}, marry=#{marry} , 
+		     frgn=#{frgn} , nation=#{nation}, tel= #{tel}, in_tel=#{in_tel}, email_out=#{email_out} ,
+		    depart_name=#{depart_name}, rank= #{rank} 
+		where id = #{id}
+   </update>
+   
+   <!-- 관리자 개인정보 삭제 -->
+   <update id="usersDelete" parameterType="String">
+   		update grb_member set show = 0 where id= #{id}
+   </update>
+    
+    <!-- 관리자 전체부서명 -->
+    <select id="departsInfo" resultType="com.spring.tutorial.dto.DepartDTO">
+   		select  depart_name 
+   		from grb_depart 
+		where show =1
+		order by depart_name
+    </select>
+    
+    <!-- 관리자 부서 삭제 -->
+	 <update id="departUpdate" parameterType="String">
+    	update grb_depart set show = 0 
+    	where depart_name= #{depart_name}
+     </update> 
+    
+    <!-- 관리자 부서 생성처리 -->
+    <insert id="deaprtInsert" parameterType="com.spring.tutorial.dto.DepartDTO">
+    	INSERT INTO grb_depart (depart_name, company_id, show) 
+		VALUES(#{depart_name},#{company_id}, #{show})
+    </insert>
+    
+    <!-- 관리자 팀 생성처리  -->
+    <insert id="teamInsert" parameterType="com.spring.tutorial.dto.TeamDTO" >
+    	INSERT INTO grb_team (team_name, depart_name, contents ,ap_day) 
+		VALUES(#{team_name}, #{depart_name}, #{contents}, #{ap_day})
+    </insert>
+    
+    <!-- 관리자 팀 배정 -->
+    <update id="humanUpdate" parameterType="com.spring.tutorial.dto.TeamDTO">
+    	update grb_team
+			set team_name = #{team_name}, depart_name = #{depart_name}, ap_day = #{ap_day}, contents = #{contents}
+		where id = #{id}
+    </update>
+    <!-- 관리자 팀 배정  -->
+    <update id="ht_update" parameterType="java.util.Map">
+	     update grb_member 
+	      set depart_name = #{depart_name}
+	     where id = #{id}
+    </update>
+    
+    <!-- 부서 별 팀 셀렉 -->
+    <select id = "teamSelectbyDepart" resultType="com.spring.tutorial.dto.TeamDTO">
+      	select t.depart_name ,t.team_name, m.name, m.id from
+		    grb_team t join grb_member m on m.id = t.id
+		order by t.depart_name, t.team_name, m.name
+	</select>
+	
+	<!-- 인사평가 셀렉 -->
+	<select id="a_select" resultType="int" parameterType="java.util.Map" >
+		select to_number(count(*)) from grb_personnel where id = #{id}
+	</select> 
+	
+	<!-- 인사평가 인설트 -->
+	  <insert id="a_insert" parameterType="java.util.Map">
+		insert into grb_personnel(id, depart_name, team_name ,p_id, p_day, p_able, p_output, p_comment)
+		values(#{id},#{depart_name},#{team_name}, #{p_id}, #{p_day}, #{p_able}, #{p_output}, #{p_comment})
+	</insert>
+	
+	<!-- 인사평가 업뎃 -->
+ 	<update id="a_update" parameterType="java.util.Map">
+		update grb_personnel 
+		set	p_day = #{p_day}, p_id=#{p_id} ,p_able = #{p_able}, p_output = #{p_output}, p_comment=#{p_comment} 
+		where id =#{id}
+	</update> 
+   		
+   		 
+   		<!-- 인설트 -->
+   		<!-- <insert id="humanInsertaa" parameterType="com.spring.tutorial.dto.PersonnelDTO">
+   			insert into grb_personnel(id, p_id, p_day ,p_able, p_output, p_comment)
+			values(#{id}, #{p_id}, #{p_day} , #{p_able}, #{p_output}, #{p_comment})
+   		</insert>  -->
+   	
+ </mapper>

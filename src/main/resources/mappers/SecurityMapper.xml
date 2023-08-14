@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+     
+ <!-- namespace="패키지명.인터페이스" -->
+ <mapper namespace="com.spring.tutorial.dao.SecurityDAO">
+ 
+ 	<!-- 팝업창 관리자 지정을 위한 사원 목록 조회 -->
+	<select id="adminAddList" parameterType="java.util.Map" resultType="com.spring.tutorial.dto.CommonDTO">
+		<![CDATA[
+		SELECT * 
+		      FROM (SELECT A.*, rownum as rn
+		      FROM (SELECT id, name, email_in, in_tel, depart_name, state, hireday
+		            FROM grb_member WHERE name NOT LIKE '%admin%' ORDER BY id ASC
+		            ) A
+		            ) WHERE rn >= #{start} AND rn <= #{end}
+		
+		]]>	
+	</select>
+   		
+   	<!-- 팝업창 사원리스트 페이징 처리 -->
+   	<select id="adminAddListCnt" resultType="int">
+   		SELECT count(*) as cnt FROM grb_member
+   	</select>
+ 
+ 	   	
+   	<select id="selectAdmin" parameterType="String" resultType="int">
+   		SELECT count(*) as selectCnt 
+		FROM grb_member WHERE id=#{id}
+   	</select>
+   	
+   <update id="updateAdmin" parameterType="java.util.Map">
+   		UPDATE grb_member 
+		SET authority=#{authority}, adminhire=sysdate WHERE id=#{id} 
+   	</update>
+  
+   	<!-- 팝업창 관리자 권한 추가 insert  -->
+    <!-- <insert id="insertAdmin" parameterType="java.util.Map">
+	   	INSERT INTO grb_Authority(ad_num, id, name, email_in, in_tel, depart_name, state, authority, administrator, hireday)
+		VALUES((select NVL(max(ad_num)+1,1) from grb_Authority), 
+		(SELECT id FROM grb_member WHERE id=#{id}), 
+		(SELECT name FROM grb_member WHERE id=#{id}), 
+		(SELECT email_in FROM grb_member WHERE id=#{id}), 
+		(SELECT in_tel FROM grb_member WHERE id=#{id}), 
+		(SELECT depart_name FROM grb_member WHERE id=#{id}), 
+		(SELECT state FROM grb_member WHERE id=#{id}), 
+		(SELECT authority FROM grb_member WHERE id=#{id}),
+		#{administrator}, 
+		sysdate)
+	</insert> -->
+      
+      <select id="securityAdminList" resultType="com.spring.tutorial.dto.CommonDTO">
+      	SELECT * FROM grb_member 
+      	where authority 
+      	in ('ROLE_ATTEND', 'ROLE_APPROVAL', 'ROLE_SECURE', 'ROLE_BOARD', 'ROLE_HUMAN', 'ROLE_NOTEBOX', 'ROLE_DEPARTMENT', 'ROLE_SERVICE')
+      </select>
+     
+     <update id="adSecurityDel" parameterType="String">
+     	UPDATE grb_member SET authority='ROLE_USER' WHERE id=#{delId}
+     </update>
+     
+     <select id="adminSearch" parameterType="String" resultType="com.spring.tutorial.dto.CommonDTO">
+     	SELECT * FROM grb_member WHERE id={id}
+     </select>
+ </mapper>

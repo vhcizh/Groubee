@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.spring.tutorial.dao.ChatDAO"> 
+
+	<!-- 채팅방 생성 -->
+	<insert id="create" parameterType="java.util.Map">
+		INSERT INTO grb_chatroom(chatroom_num, chatroom_name, id)
+    		VALUES(grb_chatRoom_seq.nextval, #{chatroom_name}, #{id})
+	</insert>
+	
+	<!-- 채팅방 생성시 개설자 멤버에 추가 -->
+	<insert id="addCreator" parameterType="String">
+		INSERT INTO grb_chatmember(id, chatroom_num)
+    		VALUES (#{id}, grb_chatRoom_seq.currval)
+	</insert>
+	
+	<!-- 생성 이후에 멤버 따로 추가 -->
+	<insert id="inviteMember" parameterType="java.util.Map">
+		INSERT INTO grb_chatmember(id, chatroom_num)
+    		VALUES (#{id}, #{chatroom_num})
+	</insert>
+	
+	<!-- 사원 채팅방에 존재하는지 체크 -->
+	<select id="checkMember" parameterType="java.util.Map" resultType="int">
+		SELECT count(*) FROM grb_chatmember WHERE id=#{id} AND chatroom_num=#{chatroom_num}
+	</select>
+	
+	<!-- 채팅방 목록  -->
+	<select id="list" parameterType="String" resultType="com.spring.tutorial.dto.ChatRoomDTO">
+		SELECT mem.chatroom_num, room.chatroom_name,
+				(select count(*) from grb_chatmember where chatroom_num=mem.chatroom_num) chatmem_total
+		FROM grb_chatmember mem
+		JOIN grb_chatroom room
+		  ON mem.chatroom_num = room.chatroom_num
+		WHERE mem.id = #{id}
+		ORDER BY room.chatroom_num
+	</select>
+	
+	<!-- 채팅방 입장 -->
+	<select id="enter" parameterType="String" resultType="com.spring.tutorial.dto.ChatRoomDTO">
+		SELECT chatroom_num, chatroom_name, id
+		FROM grb_chatroom
+		WHERE chatroom_num = #{chatroom_num}
+	</select>
+	
+	<!-- 채팅방 나가기 -->
+	<delete id="exit" parameterType="java.util.Map">
+		DELETE FROM grb_chatmember WHERE id=#{id} AND chatroom_num=#{chatroom_num} 
+	</delete>
+	
+	<!-- 현재 채팅방에 있는 사원 목록 -->
+	<select id="chatMemberList" parameterType="String" resultType="com.spring.tutorial.dto.WorkerDTO">
+		SELECT id, name, depart_name, rank 
+		FROM grb_member
+		WHERE id IN (SELECT id FROM grb_chatmember WHERE chatroom_num = #{chatroom_num})
+		ORDER BY name
+	</select>
+	
+	
+	<!-- 현재 채팅방에 없는 사원 목록 -->
+	<select id="workerList" parameterType="String" resultType="com.spring.tutorial.dto.WorkerDTO">
+		SELECT id, name, depart_name, rank 
+		FROM grb_member
+		WHERE id NOT IN (SELECT id FROM grb_chatmember WHERE chatroom_num = #{chatroom_num})
+		AND state = '재직'
+		ORDER BY depart_name, rank
+	</select>
+	
+	<!-- 사번으로 이름 구하기 -->
+	<select id="idToName" parameterType="String" resultType="String">
+		SELECT name FROM grb_member WHERE id=#{id} 
+	</select>
+	
+	<!-- 메세지 db에 저장 -->
+	<insert id="insertMsg" parameterType="com.spring.tutorial.dto.ChatMessageDTO">
+		INSERT INTO grb_chatcontent(chat_num, roomId, message, writer, regdate)
+    		VALUES(grb_chatMessage_seq.nextval,#{roomId},#{message},#{writer},sysdate)
+	</insert>
+	
+	<!-- 메세지 select -->
+	<select id="selectMsg" parameterType="String" resultType="com.spring.tutorial.dto.ChatMessageDTO">
+		SELECT ch.chat_num, ch.message, ch.writer, m.name, ch.regdate
+		FROM grb_chatcontent ch
+		JOIN grb_member m
+		ON ch.writer = m.id
+		WHERE roomId = #{roomId}
+		ORDER BY chat_num
+	</select>
+	
+</mapper>
