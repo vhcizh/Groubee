@@ -1,9 +1,4 @@
-## Contact
-📧 email: sybz0748@gmail.com  <br>
-📖 notion: https://sso0.notion.site/HOME-9971c066c5534491964c26aaf0170133?pvs=4
-<br><br>
-
-# 그룹웨어 서비스 Groubee
+# Groubee
 
 
 ### 📌 프로젝트 소개
